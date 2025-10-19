@@ -100,7 +100,7 @@ void NRZL(string binary){
 
     vector<Vertex> lines;
 
-    float prev_y = (binary[0] == '1') ? level_high : level_low;
+    float prev_y = y_mid;
     lines.push_back(Vertex({Vector2f(x, prev_y), Color::Black}));
 
 
@@ -127,7 +127,7 @@ void NRZI(string binary){
 
         //tells the starting either 1 is +ve or -ve(i.e., high level or low level)
         vector<Vertex> lines;
-        float prev_y = (binary[0] == '1') ? level_high : level_low;
+        float prev_y = y_mid;
         lines.push_back(Vertex({Vector2f(x, prev_y),Color::Black}));
 
         for(char bit : binary){
@@ -155,13 +155,35 @@ void B8ZS(string binary){
         float level_low  = y_mid + amplitude; // down
 
         vector<Vertex> lines;
-        float prev_y = (binary[0] == '1') ? level_high : level_low;
+        float prev_y = y_mid;
         lines.push_back(Vertex({Vector2f(x, prev_y), Color::Black}));
 
         //ADD LOGIC HERE
-       
+       string pattern = "00000000";
+       string replacement = "000VB0VB";
+
+       size_t pos = 0;
+       while((pos = binary.find(pattern,pos)) != string::npos){
+            binary.replace(pos, pattern.length(), replacement);
+            pos += replacement.length(); 
+       }
+       float last_polarity = level_high;
         for(char bit : binary){
-            
+            if(bit == '1'){
+                last_polarity = (last_polarity == level_high) ? level_low : level_high;
+                prev_y = last_polarity;
+            }
+            else if(bit == '0'){
+                prev_y = y_mid;
+            }
+            else if(bit == 'V'){
+                last_polarity = (last_polarity == level_high) ? level_high : level_low;
+                prev_y = last_polarity;
+            }
+            else if( bit == 'B'){
+                last_polarity = (last_polarity == level_high) ? level_low : level_high;
+                prev_y = last_polarity;
+            }
 
             
             lines.push_back(Vertex({Vector2f(x, prev_y), Color::Black}));
@@ -186,12 +208,44 @@ void HDB3(string binary){
         float level_low  = y_mid + amplitude; // down
 
         vector<Vertex> lines;
-        float prev_y = (binary[0] == '1') ? level_high : level_low;
+        float prev_y = y_mid;
         lines.push_back(Vertex({Vector2f(x, prev_y), Color::Black}));
 
-            //ADD LOGIC HERE
-        for(char bit : binary){
+        //ADD LOGIC HERE
+        string pattern = "0000";
+        int prev_pulse = 0;
+        
+            size_t pos = 0;
+            while((pos = binary.find(pattern,pos)) != string::npos){
+                string replacement = (prev_pulse%2 == 0)? "B00V": "000V";
+                    binary.replace(pos, pattern.length(), replacement);
+                if (replacement[0] == 'B' || replacement[3] == 'V') {
+            prev_pulse += 2; 
+        }
+            }
             
+        x = 50;
+        prev_pulse = 0;
+        float last_polarity = level_low;
+        for(char bit : binary){
+            if(bit == '1'){
+                last_polarity = (last_polarity == level_high) ? level_low : level_high;
+                prev_y = last_polarity;
+                prev_pulse++;
+            }
+            else if(bit == '0'){
+                prev_y = y_mid;
+            }
+            else if(bit == 'V'){
+                prev_y = last_polarity;
+                prev_pulse++;
+
+            }
+            else if( bit == 'B'){
+                last_polarity = (last_polarity == level_high) ? level_low : level_high;
+                prev_y = last_polarity;
+                prev_pulse++;
+            }
 
             
             lines.push_back(Vertex({Vector2f(x, prev_y), Color::Black}));
@@ -218,8 +272,8 @@ void AMI(string binary){
             int ch2;
             while(true){
                 mvprintw(0,0, "Select Scrambling Technique:");
-                mvprintw(2,0, "[%c] B8ZS", (choice2 == 1)? 'x': ' ');
-                mvprintw(3,0, "[%c] HDB3", (choice2 == 2)? 'x': ' ');
+                mvprintw(2,0, "[%c] B8ZS ", (choice2 == 1)? 'x': ' ');
+                mvprintw(3,0, "[%c] HDB3 ", (choice2 == 2)? 'x': ' ');
                 mvprintw(5,0, "Use 'w' to move UP and 's' to move DOWN");
 
                 ch2 = getch();
@@ -229,13 +283,19 @@ void AMI(string binary){
                 else if(ch2 == 's'){
                     if(choice2 < 2) choice2++;
                 }
+                else if (ch2 == '\n'){
+                    break;
+                }
             }
+            endwin();
+
             if(choice2 == 1){
                 B8ZS(binary);
             }
             else if( choice2 == 2){
                 HDB3(binary);
             }
+            
         }
         else if(n == 0){
             cout<<"\nRunning AMI"<<endl;
@@ -248,11 +308,11 @@ void AMI(string binary){
         float level_low  = y_mid + amplitude; // down
 
         vector<Vertex> lines;
-        float prev_y = (binary[0] == '1') ? level_high : level_low;
+        float prev_y = y_mid;
         lines.push_back(Vertex({Vector2f(x, prev_y),Color::Black}));
 
         //ADD LOGIC HERE ami
-        float last_polarity = level_high;
+        float last_polarity = level_low;
         for(char bit : binary){
             if(bit == '1'){
                 last_polarity = (last_polarity == level_high) ? level_low : level_high;
@@ -289,17 +349,36 @@ void Manchester(string binary){
         float level_low  = y_mid + amplitude; // down
 
         vector<Vertex> lines;
-        float prev_y = (binary[0] == '1') ? level_high : level_low;
+        float prev_y = y_mid;
         lines.push_back(Vertex({Vector2f(x, prev_y), Color::Black}));
 
             //ADD LOGIC HERE
         for(char bit : binary){
+            float x_mid = x + bit_width/2;
+            float x_end = x + bit_width;
             
+            float first_half_y, second_half_y;
 
-            
-            lines.push_back(Vertex({Vector2f(x, prev_y), Color::Black}));
-            x += bit_width;
-            lines.push_back(Vertex({Vector2f(x, prev_y), Color::Black}));
+            if(bit == '1'){
+                first_half_y = level_high;
+                second_half_y = level_low;
+            }
+            else if(bit == '0'){
+                first_half_y = level_low;
+                second_half_y = level_high;
+            }
+
+            lines.push_back(Vertex({Vector2f(x, first_half_y), Color::Black}));
+            lines.push_back(Vertex({Vector2f(x_mid, first_half_y), Color::Black}));
+
+            lines.push_back(Vertex({Vector2f(x_mid, first_half_y), Color::Black}));
+            lines.push_back(Vertex({Vector2f(x_mid, second_half_y), Color::Black}));
+
+            lines.push_back(Vertex({Vector2f(x_mid, second_half_y), Color::Black}));
+            lines.push_back(Vertex({Vector2f(x_end, second_half_y), Color::Black}));
+
+            prev_y = second_half_y;
+            x = x_end;
         }
         
 
@@ -319,17 +398,37 @@ void DManchester(string binary){
         float level_low  = y_mid + amplitude; // down
 
         vector<Vertex> lines;
-        float prev_y = (binary[0] == '1') ? level_high : level_low;
+        float prev_y = y_mid;
         lines.push_back(Vertex({Vector2f(x, prev_y),Color::Black}));
 
         //ADD LOGIC HERE
         for(char bit : binary){
-            
 
+            float x_mid = x + bit_width/2;
+            float x_end = x + bit_width;
+
+            float first_half_y, second_half_y;
+
+            if(bit == '1'){
+                first_half_y = prev_y;
+            }
+            else if( bit =='0'){
+                first_half_y = (prev_y == level_high)?level_low: level_high;
+            }
+             second_half_y = (first_half_y == level_low)? level_high:level_low;
+
+             lines.push_back(Vertex({Vector2f(x, first_half_y), Color::Black}));
+            lines.push_back(Vertex({Vector2f(x_mid, first_half_y), Color::Black}));
+
+            lines.push_back(Vertex({Vector2f(x_mid, first_half_y), Color::Black}));
+            lines.push_back(Vertex({Vector2f(x_mid, second_half_y), Color::Black}));
+
+            lines.push_back(Vertex({Vector2f(x_mid, second_half_y), Color::Black}));
+            lines.push_back(Vertex({Vector2f(x_end, second_half_y), Color::Black}));
+
+            prev_y = second_half_y;
+            x = x_end;
             
-            lines.push_back(Vertex({Vector2f(x, prev_y), Color::Black}));
-            x += bit_width;
-            lines.push_back(Vertex({Vector2f(x, prev_y), Color::Black}));
         }
         windowLogic(binary, lines, "Differential Manchester Visualization");
 
@@ -348,12 +447,11 @@ void PCM(string binary){
         float level_low  = y_mid + amplitude; // down
 
         vector<Vertex> lines;
-        float prev_y = (binary[0] == '1') ? level_high : level_low;
+        float prev_y = y_mid;
         lines.push_back(Vertex({Vector2f(x, prev_y),Color::Black}));
 
         //ADD LOGIC HERE
         for(char bit : binary){
-            
 
             
             lines.push_back(Vertex({Vector2f(x, prev_y), Color::Black}));
@@ -378,7 +476,7 @@ void DM(string binary){
         float level_low  = y_mid + amplitude; // down
 
         vector<Vertex> lines;
-        float prev_y = (binary[0] == '1') ? level_high : level_low;
+        float prev_y = y_mid;
         lines.push_back(Vertex({Vector2f(x, prev_y),Color::Black}));
 
         //ADD LOGIC HERE
