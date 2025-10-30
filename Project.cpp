@@ -566,7 +566,7 @@ string decodeDManchester(vector<float> signalLevels){
     float threshold = amplitude / 2;
 
     float prev_first = signalLevels[0];
-    bool prevHigh = prev_first < y_mid - threshold; // track previous polarity
+    bool prevHigh = prev_first < y_mid - threshold;
 
     for (size_t i = 0; i + 1 < signalLevels.size(); i += 2) {
         float first = signalLevels[i];
@@ -574,19 +574,14 @@ string decodeDManchester(vector<float> signalLevels){
 
         bool firstHigh  = first < y_mid - threshold;
         bool secondHigh = second < y_mid - threshold;
-
-        // Check for transition at the start of the bit
         bool transitionAtStart = (firstHigh != prevHigh);
 
         if (transitionAtStart)
-            bits += '0'; // transition at start → 0
+            bits += '0'; 
         else
-            bits += '1'; // no transition at start → 1
-
-        // Update prevHigh for next bit
+            bits += '1'; 
         prevHigh = secondHigh;
     }
-
     return bits;
 }
 void DManchester(string binary){
