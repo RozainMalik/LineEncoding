@@ -11,24 +11,17 @@ It also supports PCM and Delta Modulation visualization.
 Along with the encoder implementation, decoder functions have also been added for each line encoding scheme (NRZ-L, NRZ-I, AMI, Manchester, Differential Manchester, B8ZS, and HDB3).
 
 Each decoder analyzes the generated signal waveform levels (signalLevels vector) and reconstructs the original binary data stream.
-## Install dependencies
-### For macOS:
- brew install sfml ncurses
-### For windows: 
- sudo apt update
- sudo apt install libsfml-dev libncurses5-dev libncursesw5-dev   
-  
-  Native Windows: Download SFML from: https://www.sfml-dev.org/download.php
- (or better check documentation)
+## Install dependencies for macOS:
 
-## Compilation: 
+brew install sfml ncurses
+## Compilation for macOS: 
 ### macOS:
  clang++ -std=c++17 Project.cpp -o project \
 -I/opt/homebrew/opt/sfml/include \
 -L/opt/homebrew/opt/sfml/lib \
 -lsfml-graphics -lsfml-window -lsfml-system -lncurses 
 
-### windows(using MinGW):
+### for windows(using MinGW):
 - Install MinGW or WSL (Windows Subsystem for Linux)
 - Install SFML: https://www.sfml-dev.org/download/sfml/2.6.1/
 - Use PDCurses (instead of ncurses): https://pdcurses.sourceforge.io/
