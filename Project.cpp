@@ -5,32 +5,47 @@
 #include<SFML/Graphics/Text.hpp>
 #include<iostream>
 #include<string>
+#include<cmath>
 #include<ncurses.h>
 using namespace std;
 using namespace sf;
 
-void windowLogic(string& binary, vector<Vertex>& lines, const string& title ){
+void windowLogic(string& binary, vector<Vertex>& lines, const string& title, function<string(vector<float>)> decodeFunc,vector<float>& signalLevels  ){
     RenderWindow window(VideoMode({800, 400}), title);
 
     float x = 50;
     float y_mid = 200;
     float bit_width = 60;
-    float amplitude = 50; // distance from middle line
-    float level_high = y_mid - amplitude; // up
-    float level_low  = y_mid + amplitude; // down
+    float amplitude = 50; 
+    float level_high = y_mid - amplitude;
+    float level_low  = y_mid + amplitude;
 
-     //adding button
+    //adding exit button
     RectangleShape exitButton(Vector2f(100.f, 35.f));
     exitButton.setPosition({650.f, 350.f});
     exitButton.setFillColor(Color::White);
 
-    Font font("/System/Library/Fonts/Supplemental/Arial.ttf"); // full path to system font
-    Text exitText(font, "X exit", 15); // font, string, character size
+    //adding decoder button
+    RectangleShape decodeButton(Vector2f(100.f, 35.f));
+    decodeButton.setPosition({50.f, 350.f});
+    decodeButton.setFillColor(Color::White);
+
+    Font font("/System/Library/Fonts/Supplemental/Arial.ttf"); 
+
+    Text exitText(font, "X exit", 15); 
     exitText.setFillColor(Color::Black);
-    Vector2f buttonPos = exitButton.getPosition(); // get button position
+    Vector2f buttonPos = exitButton.getPosition(); 
     exitText.setPosition({buttonPos.x + 20.f, buttonPos.y + 5.f});
 
-    //window design(intervals, lines, axis, event handling etc.)
+    Text decodeText(font, "Decode", 15); 
+    decodeText.setFillColor(Color::Black);
+    Vector2f decodePos = decodeButton.getPosition();
+    decodeText.setPosition({decodePos.x + 10.f, decodePos.y + 5.f});
+
+    Text decodedText(font, " ", 15);
+    decodedText.setFillColor(Color::Black);
+    decodedText.setPosition({decodePos.x, decodePos.y + 25.f});
+
     while (window.isOpen()) {
         // Event handling
         while (auto eventOpt = window.pollEvent()) {
@@ -43,9 +58,17 @@ void windowLogic(string& binary, vector<Vertex>& lines, const string& title ){
             if (event.is<sf::Event::MouseButtonPressed>()) {
                 sf::Vector2i mousePos = sf::Mouse::getPosition(window);
                 sf::Vector2f mousePosF(static_cast<float>(mousePos.x), static_cast<float>(mousePos.y));
+
                 if (exitButton.getGlobalBounds().contains(mousePosF)) {
                     window.close();
-                    exit(0); 
+                    exit(0);
+                }
+
+                if (decodeButton.getGlobalBounds().contains(mousePosF)) {
+                    if (decodeFunc) {
+                        string decoded = decodeFunc(signalLevels);
+                        decodedText.setString("Decoded Binary: " + decoded);
+                    }
                 }
             }
         }
@@ -57,6 +80,8 @@ void windowLogic(string& binary, vector<Vertex>& lines, const string& title ){
         window.draw(exitButton);
         window.draw(exitText);
 
+        window.draw(decodeButton);
+        window.draw(decodeText);
         // drawing middle horizontal axis
         Vertex axis[] = {
             Vertex({Vector2f(0, y_mid), Color::Blue}),
@@ -82,79 +107,142 @@ void windowLogic(string& binary, vector<Vertex>& lines, const string& title ){
         if (!lines.empty())
             window.draw(&lines[0], lines.size(), sf::PrimitiveType::LineStrip);
 
+        // drawing decodedText.
+        window.draw(decodedText);
         // displaying frame
         window.display();
     }
 }
-
 //NRZ-L
+string decodeNRZL(vector<float> signalLevels){
+    string bits = "";
+        if (signalLevels.empty()) return bits;
+
+        float level_high = 150;
+        float level_low  = 250;
+
+        for (float level : signalLevels) {
+            bits += (level < (level_high + level_low) / 2) ? '1' : '0';
+        }
+    return bits;
+}
 void NRZL(string binary){
     cout<<"\nRunning NRZL"<<endl;
     float x = 50;
     float y_mid = 200;
     float bit_width = 60;
-    float amplitude = 50; // distance from middle line
-    float level_high = y_mid - amplitude; // up
-    float level_low  = y_mid + amplitude; // down
+    float amplitude = 50;
+    float level_high = y_mid - amplitude; 
+    float level_low  = y_mid + amplitude; 
 
 
     vector<Vertex> lines;
-
-    float prev_y = y_mid;
+    vector<float> signalLevels;
+    float prev_y = level_low;
     lines.push_back(Vertex({Vector2f(x, prev_y), Color::Black}));
 
 
     for (char bit : binary) {
         float current_y = (bit == '1') ? level_high : level_low; //level logic
+
+        signalLevels.push_back(current_y);
+
         lines.push_back(Vertex({Vector2f(x, current_y), Color::Black}));
         x += bit_width;
         lines.push_back(Vertex({Vector2f(x, current_y), Color::Black}));
     }
 
-    windowLogic(binary, lines, "NRZ-L Visualization");
-    
+    windowLogic(binary, lines, "NRZ-L Visualization", decodeNRZL, signalLevels);
 }
-
 //NRZ-I
+string decodeNRZI(vector<float> signalLevels){
+    string bits = "";
+    if (signalLevels.empty()) return bits;
+
+    float level_high = 150;
+    float level_low  = 250;
+    float prev = signalLevels[0];
+    
+    for (size_t i = 1; i < signalLevels.size(); i++) {
+        bits += (signalLevels[i] != prev) ? '1' : '0';
+        prev = signalLevels[i];
+    }
+    return bits;
+}
 void NRZI(string binary){
         cout<<"\nRunning NRZI"<<endl;
         float x = 50;
         float y_mid = 200;
         float bit_width = 60;
-        float amplitude = 50; // distance from middle line
-        float level_high = y_mid - amplitude; // up
-        float level_low  = y_mid + amplitude; // down
+        float amplitude = 50; 
+        float level_high = y_mid - amplitude; 
+        float level_low  = y_mid + amplitude; 
 
         //tells the starting either 1 is +ve or -ve(i.e., high level or low level)
         vector<Vertex> lines;
-        float prev_y = y_mid;
+        vector<float> signalLevels;
+
+        float prev_y = level_low;
+        signalLevels.push_back(prev_y);
         lines.push_back(Vertex({Vector2f(x, prev_y),Color::Black}));
 
         for(char bit : binary){
             if(bit == '1'){
                 prev_y = (prev_y == level_high) ? level_low : level_high;
             }
+            signalLevels.push_back(prev_y);
+
             lines.push_back(Vertex({Vector2f(x, prev_y), Color::Black}));
             x += bit_width;
             lines.push_back(Vertex({Vector2f(x, prev_y), Color::Black}));
         }
         
-        windowLogic(binary, lines, "NRZ-I Visualization");
+        windowLogic(binary, lines, "NRZ-I Visualization", decodeNRZI, signalLevels);
 
 }
-
 //B8ZS
+string decodeB8ZS(vector<float> signalLevels){
+    string bits = "";
+    if (signalLevels.empty()) return bits;
+
+    float high = 150;   
+    float low  = 250;  
+    float mid  = (high + low) / 2;
+    
+    vector<char> symbols;
+    for (float level : signalLevels) {
+        if (abs(level - mid) < 10) symbols.push_back('0'); 
+        else if (level < mid) symbols.push_back('+');
+        else symbols.push_back('-');
+    }
+
+    for (size_t i = 0; i < symbols.size(); i++) {
+        // Check for B8ZS patterns
+        if (i + 7 < symbols.size()) {
+            string pattern(symbols.begin() + i, symbols.begin() + i + 8);
+            if (pattern == "000+-0-+" || pattern == "000-+0+-") {
+                bits += "00000000"; 
+                i += 7; 
+                continue;
+            }
+        }
+        bits += (symbols[i] == '0') ? '0' : '1';
+    }
+    return bits;
+}
 void B8ZS(string binary){
     cout<<"\nRunning B8ZS"<<endl;
 
         float x = 50;
         float y_mid = 200;
         float bit_width = 60;
-        float amplitude = 50; // distance from middle line
-        float level_high = y_mid - amplitude; // up
-        float level_low  = y_mid + amplitude; // down
+        float amplitude = 50; 
+        float level_high = y_mid - amplitude; 
+        float level_low  = y_mid + amplitude; 
 
         vector<Vertex> lines;
+        vector<float> signalLevels;
+
         float prev_y = y_mid;
         lines.push_back(Vertex({Vector2f(x, prev_y), Color::Black}));
 
@@ -185,6 +273,7 @@ void B8ZS(string binary){
                 prev_y = last_polarity;
             }
 
+            signalLevels.push_back(prev_y);
             
             lines.push_back(Vertex({Vector2f(x, prev_y), Color::Black}));
             x += bit_width;
@@ -192,22 +281,57 @@ void B8ZS(string binary){
         }
         
 
-        windowLogic(binary, lines, "B8ZS Scrambled Visualization");
+        windowLogic(binary, lines, "B8ZS Scrambled Visualization", decodeB8ZS, signalLevels);
 
 }
-
 //HDB3
+string decodeHDB3(vector<float> signalLevels){
+    string bits = "";
+    if (signalLevels.empty()) return bits;
+
+    float y_mid = 200;         
+    float amplitude = 50;        
+    float level_high = y_mid - amplitude; 
+    float level_low  = y_mid + amplitude; 
+    float threshold = amplitude / 2; 
+
+    float last_polarity = 0;
+    int zeroCount = 0;
+
+    for (float level : signalLevels) {
+        if (abs(level - y_mid) < threshold) {
+            bits += '0';
+            zeroCount++;
+        } 
+        else {
+            if (last_polarity != 0 && level == last_polarity) {
+                for (int i = bits.size() - 3; i < bits.size(); ++i) {
+                    if (i >= 0 && i < bits.size()) bits[i] = '0';
+                }
+                bits += '0'; 
+            } 
+            else {
+                bits += '1';
+                last_polarity = level;
+                zeroCount = 0;
+            }
+        }
+    }
+    return bits;
+}
 void HDB3(string binary){
     cout<<"\nRunning HDB3"<<endl;
 
         float x = 50;
         float y_mid = 200;
         float bit_width = 60;
-        float amplitude = 50; // distance from middle line
-        float level_high = y_mid - amplitude; // up
-        float level_low  = y_mid + amplitude; // down
+        float amplitude = 50; 
+        float level_high = y_mid - amplitude; 
+        float level_low  = y_mid + amplitude; 
 
         vector<Vertex> lines;
+        vector<float> signalLevels;
+
         float prev_y = y_mid;
         lines.push_back(Vertex({Vector2f(x, prev_y), Color::Black}));
 
@@ -247,18 +371,35 @@ void HDB3(string binary){
                 prev_pulse++;
             }
 
-            
+            signalLevels.push_back(prev_y);
+
             lines.push_back(Vertex({Vector2f(x, prev_y), Color::Black}));
             x += bit_width;
             lines.push_back(Vertex({Vector2f(x, prev_y), Color::Black}));
         }
         
 
-        windowLogic(binary, lines, "HDB3 Scrambled Visualization");
+        windowLogic(binary, lines, "HDB3 Scrambled Visualization", decodeHDB3, signalLevels);
 
 }
-
 //AMI
+string decodeAMI(vector<float> signalLevels){
+    string bits = "";
+    if (signalLevels.empty()) return bits;
+
+     float level_high = 150;
+    float level_low  = 250;
+    float mid = (150 + 250) / 2; 
+
+    for (float level : signalLevels) {
+        if (abs(level - mid) < 10)
+            bits += '0';
+        else
+            bits += '1';
+    }
+
+    return bits;
+}
 void AMI(string binary){
         int n;
         cout << "Is Scrambled needed?(Enter 1/0 for YES/No)"<<endl;
@@ -303,15 +444,17 @@ void AMI(string binary){
         float x = 50;
         float y_mid = 200;
         float bit_width = 60;
-        float amplitude = 50; // distance from middle line
-        float level_high = y_mid - amplitude; // up
-        float level_low  = y_mid + amplitude; // down
+        float amplitude = 50; 
+        float level_high = y_mid - amplitude; 
+        float level_low  = y_mid + amplitude; 
 
         vector<Vertex> lines;
+        vector<float> signalLevels;
+
         float prev_y = y_mid;
         lines.push_back(Vertex({Vector2f(x, prev_y),Color::Black}));
 
-        //ADD LOGIC HERE ami
+        //ADD LOGIC HERE
         float last_polarity = level_low;
         for(char bit : binary){
             if(bit == '1'){
@@ -322,13 +465,14 @@ void AMI(string binary){
                 prev_y = y_mid;
             }
 
+            signalLevels.push_back(prev_y);
 
             lines.push_back(Vertex({Vector2f(x, prev_y), Color::Black}));
             x += bit_width;
             lines.push_back(Vertex({Vector2f(x, prev_y), Color::Black}));
         }
 
-        windowLogic(binary, lines, "AMI Visualization");
+        windowLogic(binary, lines, "AMI Visualization", decodeAMI, signalLevels);
         
         }
         else{
@@ -336,19 +480,42 @@ void AMI(string binary){
         }
 
 }
-
 //MANCHESTER
+string decodeManchester(vector<float> signalLevels){
+    string bits = "";
+    if (signalLevels.size() < 2) return bits;
+
+    float y_mid = 200;
+    float amplitude = 50;
+    float level_high = y_mid - amplitude;
+    float level_low = y_mid + amplitude;
+    float threshold = amplitude / 2;
+
+    for (size_t i = 0; i + 1 < signalLevels.size(); i += 2) {
+        float first = signalLevels[i];
+        float second = signalLevels[i + 1];
+
+        if (first < y_mid && second > y_mid)
+            bits += '1'; 
+        else if (first > y_mid && second < y_mid)
+            bits += '0'; 
+    }
+
+    return bits;
+}
 void Manchester(string binary){
         cout<<"\nRunning Manchester"<<endl;
 
         float x = 50;
         float y_mid = 200;
         float bit_width = 60;
-        float amplitude = 50; // distance from middle line
-        float level_high = y_mid - amplitude; // up
-        float level_low  = y_mid + amplitude; // down
+        float amplitude = 50; 
+        float level_high = y_mid - amplitude; 
+        float level_low  = y_mid + amplitude; 
 
         vector<Vertex> lines;
+        vector<float> signalLevels;
+
         float prev_y = y_mid;
         lines.push_back(Vertex({Vector2f(x, prev_y), Color::Black}));
 
@@ -379,25 +546,61 @@ void Manchester(string binary){
 
             prev_y = second_half_y;
             x = x_end;
+
+            signalLevels.push_back(first_half_y);
+            signalLevels.push_back(second_half_y);
         }
         
 
-        windowLogic(binary, lines, "Manchester Visualization");
+        windowLogic(binary, lines, "Manchester Visualization", decodeManchester, signalLevels);
 
 
 }
-
 //DMANCHESTER
+string decodeDManchester(vector<float> signalLevels){
+     string bits = "";
+    if (signalLevels.size() < 2) return bits;
+
+    float y_mid = 200;
+    float amplitude = 50;
+    float threshold = amplitude / 2;
+
+    float prev_first = signalLevels[0];
+    bool prevHigh = prev_first < y_mid - threshold; // track previous polarity
+
+    for (size_t i = 0; i + 1 < signalLevels.size(); i += 2) {
+        float first = signalLevels[i];
+        float second = signalLevels[i + 1];
+
+        bool firstHigh  = first < y_mid - threshold;
+        bool secondHigh = second < y_mid - threshold;
+
+        // Check for transition at the start of the bit
+        bool transitionAtStart = (firstHigh != prevHigh);
+
+        if (transitionAtStart)
+            bits += '0'; // transition at start → 0
+        else
+            bits += '1'; // no transition at start → 1
+
+        // Update prevHigh for next bit
+        prevHigh = secondHigh;
+    }
+
+    return bits;
+}
 void DManchester(string binary){
         cout<<"\nRunning DManchester"<<endl;
         float x = 50;
         float y_mid = 200;
         float bit_width = 60;
-        float amplitude = 50; // distance from middle line
-        float level_high = y_mid - amplitude; // up
-        float level_low  = y_mid + amplitude; // down
+        float amplitude = 50; 
+        float level_high = y_mid - amplitude; 
+        float level_low  = y_mid + amplitude; 
 
         vector<Vertex> lines;
+        vector<float> signalLevels;
+
         float prev_y = y_mid;
         lines.push_back(Vertex({Vector2f(x, prev_y),Color::Black}));
 
@@ -429,72 +632,113 @@ void DManchester(string binary){
             prev_y = second_half_y;
             x = x_end;
             
+            signalLevels.push_back(first_half_y);
+            signalLevels.push_back(second_half_y);
         }
-        windowLogic(binary, lines, "Differential Manchester Visualization");
+        windowLogic(binary, lines, "Differential Manchester Visualization", decodeDManchester, signalLevels);
 
 
 }
-
 //PCM
+string decodePCM(vector<float> signalLevels){
+    string bits = "";
+    float y_mid = 200;
+    float amplitude = 50;
+    float threshold = amplitude / 2;
+
+    for (float level : signalLevels) {
+        if (level < y_mid - threshold)
+            bits += '1'; 
+        else
+            bits += '0'; 
+    }
+    return bits;
+}
 void PCM(string binary){
         cout<<"\nRunning PCM"<<endl;
 
         float x = 50;
         float y_mid = 200;
         float bit_width = 60;
-        float amplitude = 50; // distance from middle line
-        float level_high = y_mid - amplitude; // up
-        float level_low  = y_mid + amplitude; // down
+        float amplitude = 50; 
+        float level_high = y_mid - amplitude; 
+        float level_low  = y_mid + amplitude; 
 
         vector<Vertex> lines;
+        vector<float> signalLevels;
+
         float prev_y = y_mid;
         lines.push_back(Vertex({Vector2f(x, prev_y),Color::Black}));
 
-        //ADD LOGIC HERE
+        //ADDING LOGIC HERE  
         for(char bit : binary){
+            float x_end = x + bit_width;
 
+            if(bit == '1'){
+                prev_y = level_high;
+            }
+            else{
+                prev_y = level_low;
+
+            }
+            signalLevels.push_back(prev_y);
             
             lines.push_back(Vertex({Vector2f(x, prev_y), Color::Black}));
-            x += bit_width;
             lines.push_back(Vertex({Vector2f(x, prev_y), Color::Black}));
+            x = x_end;
         }
 
-        windowLogic(binary, lines, "PCM Visualization");
+        windowLogic(binary, lines, "PCM Visualization", decodePCM, signalLevels);
 
 
 }
-
 //DM
+string decodeDM(vector<float> signalLevels){
+    string bits = "";
+    if (signalLevels.size() < 2) return bits;
+
+    for (size_t i = 1; i < signalLevels.size(); i++) {
+        if (signalLevels[i] < signalLevels[i - 1])
+            bits += '1'; 
+        else
+            bits += '0'; 
+    }
+    return bits;
+}
 void DM(string binary){
         printf("\nRunning DM");
 
         float x = 50;
         float y_mid = 200;
         float bit_width = 60;
-        float amplitude = 50; // distance from middle line
-        float level_high = y_mid - amplitude; // up
-        float level_low  = y_mid + amplitude; // down
+        float amplitude = 50; 
 
         vector<Vertex> lines;
+        vector<float> signalLevels;
+
         float prev_y = y_mid;
+        signalLevels.push_back(prev_y);
         lines.push_back(Vertex({Vector2f(x, prev_y),Color::Black}));
 
         //ADD LOGIC HERE
+        float step = 40;
         for(char bit : binary){
-            
+            float x_end = x + bit_width;
+            if(bit == '1'){
+                prev_y -= step;
+            }         
+            else{
+                prev_y += step;
+            }
+            signalLevels.push_back(prev_y);
 
-            
-            lines.push_back(Vertex({Vector2f(x, prev_y), Color::Black}));
-            x += bit_width;
-            lines.push_back(Vertex({Vector2f(x, prev_y), Color::Black}));
+            lines.push_back(Vertex({Vector2f(x_end, prev_y), Color::Black}));
+            x = x_end;
         }
-        windowLogic(binary, lines, "DM Visualization");
-
+        windowLogic(binary, lines, "DM Visualization", decodeDM, signalLevels);
 }
-
 void digitalEncodingMenu(string binary){
         cout<<"\nApplying line encoding."<<endl;
-
         initscr();
         noecho();
         cbreak();
@@ -543,7 +787,6 @@ void digitalEncodingMenu(string binary){
                 break;
         }
 }
-
 void analogEncodingMenu(string binary){
         initscr(); 
         noecho();
@@ -576,29 +819,29 @@ void analogEncodingMenu(string binary){
         if(choice == 1) PCM(binary);
         else if(choice == 2) DM(binary);
 }
-
-
 void mainMenu(){
     cout << "\nWelcome To Data Tranmissions!" <<endl;
 
     string signal;
     cout << "\nEnter the type of input signal (digital/analog)" <<endl;
     getline(cin, signal);
-    string binary;
-    cout << "\nEnter the input binary:" <<endl;
-    getline(cin, binary);
-    if(signal == "digital"){
-        digitalEncodingMenu(binary);
-    }
-    else if(signal == "analog"){
-       analogEncodingMenu(binary);
-    }
-    else{
-        cout << "Invalid Input" <<endl;
-        cout.flush();
+
+    transform(signal.begin(), signal.end(), signal.begin(), ::tolower);
+    
+    if (signal == "digital" || signal == "analog") {
+        string binary;
+        cout << "\nEnter the input binary: ";
+        getline(cin, binary);
+
+        if (signal == "digital")
+            digitalEncodingMenu(binary);
+        else
+            analogEncodingMenu(binary);
+    } 
+    else {
+        cout << "Invalid Input" << endl;
     }
 }
-
 int main(){
     mainMenu();
     return 0;
