@@ -26,10 +26,9 @@ It also supports PCM and Delta Modulation visualization.
 -lsfml-graphics -lsfml-window -lsfml-system -lncurses 
 
 ### windows(using MinGW):
-g++ -std=c++17 Project.cpp -o project.exe \
--I C:\SFML\include -L C:\SFML\lib \
--lsfml-graphics -lsfml-window -lsfml-system -lpdcurses
-
+- Install MinGW or WSL (Windows Subsystem for Linux)
+- Install SFML: https://www.sfml-dev.org/download/sfml/2.6.1/
+- Use PDCurses (instead of ncurses): https://pdcurses.sourceforge.io/
 
 ## Terminal based:
 
@@ -43,7 +42,11 @@ g++ -std=c++17 Project.cpp -o project.exe \
 
  1. include<SFML/Graphicsdothpp>
  2. run to include sfml > brew install sfml
- 3  compile with sfml > clang++ Projectdotcpp-o project -lsfml-graphics -lsfml-window -lsfml-system
+ 3. compile with sfml > clang++ Projectdotcpp-o project -lsfml-graphics -lsfml-window -lsfml-system
 
 
 I used SFML, which is a modern C++ graphics and multimedia library. It provides a simpler API for rendering shapes, text, and real-time graphics, and internally it’s built on top of OpenGL. So it’s still consistent with the requirement to use a graphics library.
+
+## Note:
+- The project has been tested on macOS with clang++ and SFML installed via Homebrew.
+- For Linux or Windows users, adjust include and library paths accordingly.
