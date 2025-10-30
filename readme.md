@@ -7,7 +7,10 @@ It also supports PCM and Delta Modulation visualization.
         C++
 ### Libraries:
         SFML (for GUI), ncurses (for terminal interface)
+### Decoder
+Along with the encoder implementation, decoder functions have also been added for each line encoding scheme (NRZ-L, NRZ-I, AMI, Manchester, Differential Manchester, B8ZS, and HDB3).
 
+Each decoder analyzes the generated signal waveform levels (signalLevels vector) and reconstructs the original binary data stream.
 ## Install dependencies
 ### For macOS:
  brew install sfml ncurses
