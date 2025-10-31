@@ -793,10 +793,11 @@ void analogEncodingMenu(string binary){
 
         while (true) {
             clear();
-            mvprintw(0, 0, "Select encoding technique:");
-            mvprintw(2, 0, "[%c] PCM", (choice == 1 ? 'x' : ' '));
-            mvprintw(3, 0, "[%c] DM (Delta Modulation)", (choice == 2 ? 'x' : ' '));
-            mvprintw(5, 0, "Use 'w' to move UP and 's' to move DOWN, Enter to select.");
+            mvprintw(0, 0, "Assuming the binary to be analog sample");
+            mvprintw(2, 0, "Select encoding technique:");
+            mvprintw(3, 0, "[%c] PCM", (choice == 1 ? 'x' : ' '));
+            mvprintw(4, 0, "[%c] DM (Delta Modulation)", (choice == 2 ? 'x' : ' '));
+            mvprintw(6, 0, "Use 'w' to move UP and 's' to move DOWN, Enter to select.");
 
             ch = getch();
             if (ch == 'w') {
