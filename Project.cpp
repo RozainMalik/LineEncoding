@@ -814,9 +814,35 @@ void analogEncodingMenu(string binary){
         if(choice == 1) PCM(binary);
         else if(choice == 2) DM(binary);
 }
+
+void pallindrome(string binary){
+    int n = binary.size();
+   int st = 0, maxLen = 1;
+
+    for (int center = 0; center < n; center++) {
+        int l = center, r = center;
+        while (l >= 0 && r < n && binary[l] == binary[r]) {
+            if (r - l + 1 > maxLen) {
+                st = l;
+                maxLen = r - l + 1;
+            }
+            l--; r++;
+        }
+        l = center, r = center + 1;
+        while (l >= 0 && r < n && binary[l] == binary[r]) {
+            if (r - l + 1 > maxLen) {
+                st = l;
+                maxLen = r - l + 1;
+            }
+            l--; r++;
+        }
+    }
+
+    string longest = binary.substr(st, maxLen);
+    cout << "\nLongest Palindrome in the data stream: " << longest << endl;
+}
 void mainMenu(){
     cout << "\nWelcome To Data Tranmissions!" <<endl;
-
     string signal;
     cout << "\nEnter the type of input signal (digital/analog)" <<endl;
     getline(cin, signal);
@@ -827,7 +853,7 @@ void mainMenu(){
         string binary;
         cout << "\nEnter the input binary: ";
         getline(cin, binary);
-
+        pallindrome(binary);
         if (signal == "digital")
             digitalEncodingMenu(binary);
         else
